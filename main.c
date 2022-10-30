@@ -5,19 +5,18 @@
 #include <conio.h>
 
 const int WIDTH = 40;
-const int HEIGHT = 20;
+const int HEIGHT = WIDTH / 2;
 const char SNAKE_CHAR = '#';
 const char FRUIT_CHAR = '@';
 const int SNAKE_COLOR = 10;
 const int WALL_COLOR = 255;
 const int FRUIT_COLOR = 12;
 const int STD_COLOR = 7;
-const int X_OFFSET = 2;
-const int Y_OFFSET = 2;
+const int X_OFFSET = 5;
+const int Y_OFFSET = 5;
 const int DELAY = 100;
-const int DELAY_INCREMENT = 50;
+const int DELAY_INCREMENT = DELAY / 2;
 const int TAIL = 0;
-
 
 int decide(char a);
 int init();
@@ -48,7 +47,6 @@ int main(){
                continue;
         moveonestep();
     }
-    return 0;
 }
 
 void move(int x,int y){
@@ -68,14 +66,13 @@ void move(int x,int y){
 }
 
 void check(int x, int y) {
-    if (x == WIDTH + X_OFFSET-1 || x < X_OFFSET+1 || y ==HEIGHT+Y_OFFSET-1 || y < Y_OFFSET+1){
-       gameOver();
-    }
-    for (int i = 0; i < length -1; i++) {
-        if (X[i] == x && Y[i] == y) {
-           gameOver();
-        }
-    }
+    if (x == WIDTH + X_OFFSET-1 || x < X_OFFSET+1 || y ==HEIGHT+Y_OFFSET-1 || y < Y_OFFSET+1)
+        gameOver();
+
+    for (int i = 0; i < length -1; i++)
+        if (X[i] == x && Y[i] == y)
+            gameOver();
+
     if (fruitX == x && fruitY == y) {
         length++;
         head++;
@@ -149,7 +146,6 @@ int decide(char keyPress) {
         case 27:
         case 'q':
             terminate();
-            break;
     }
     return 0;
 }
@@ -170,11 +166,10 @@ void showFruit() {
     generate:
     fruitX = (rand() % (WIDTH -2)) + X_OFFSET+1;
     fruitY = (rand() % (HEIGHT -2)) + Y_OFFSET+1;
-    for (int i = 0; i < length -1; i++) {
-        if (X[i] == fruitX && Y[i] == fruitY) {
+    for (int i = 0; i < length -1; i++)
+        if (X[i] == fruitX && Y[i] == fruitY)
             goto generate;
-        }
-    }
+
     gotoxy(fruitX,fruitY);
     changeColor(FRUIT_COLOR);
     printf("%c",FRUIT_CHAR);
@@ -191,11 +186,11 @@ void gameOver() {
     changeColor(STD_COLOR);
     printf("Game over!");
     gotoxy(60,14);
-    printf("Again? (y/n)");
+    printf("Again? (y)");
 
-    if (getch() == 'y'){
+    if (getch() == 'y')
         main();
-    }
+
     terminate();
 }
 
