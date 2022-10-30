@@ -12,28 +12,34 @@ const int SNAKE_COLOR = 10;
 const int WALL_COLOR = 255;
 const int FRUIT_COLOR = 12;
 const int STD_COLOR = 7;
-const int X_OFFSET = 5;
-const int Y_OFFSET = 5;
+const int X_OFFSET = 4;
+const int Y_OFFSET = 2;
 const int DELAY = 100;
 const int DELAY_INCREMENT = DELAY / 2;
 const int TAIL = 0;
 
 int decide(char a);
-int init();
+void init();
 void showFruit();
 void showScore();
 void createWalls();
 void hidecursor();
 void gotoxy(int x, int y);
 void changeColor(int color);
+void moveonestep();
+void check(int x, int y);
+void gameOver();
+void terminate();
+void adjust(int x, int y);
+void delay(int millis);
 
-int length,head,fruitX,fruitY,score;
+int head,fruitX,fruitY,score;
 char direction;
 int X[800];
 int Y[800];
-int ateOnPrevious = 0;
 
 int main(){
+
     init();
     hidecursor();
     system("cls");
@@ -50,44 +56,38 @@ int main(){
 }
 
 void move(int x,int y){
-
     check(x,y);
-    if (ateOnPrevious) {
-        ateOnPrevious = 0;
+    if (x == fruitX && y == fruitY){
+        head++;
+        X[head] = x;
+        Y[head] = y;
+        score++;
+        showScore();
+        showFruit();
     } else {
         gotoxy(X[TAIL],Y[TAIL]);
+        changeColor(10);
         printf(" ");
         adjust(x,y);
     }
 
-   gotoxy(x,y);
-   changeColor(SNAKE_COLOR);
-   printf("%c",SNAKE_CHAR);
+    gotoxy(x,y);
+    changeColor(SNAKE_COLOR);
+    printf("%c",SNAKE_CHAR);
 }
 
 void check(int x, int y) {
     if (x == WIDTH + X_OFFSET-1 || x < X_OFFSET+1 || y ==HEIGHT+Y_OFFSET-1 || y < Y_OFFSET+1)
         gameOver();
 
-    for (int i = 0; i < length -1; i++)
+    for (int i = 0; i < head; i++)
         if (X[i] == x && Y[i] == y)
             gameOver();
-
-    if (fruitX == x && fruitY == y) {
-        length++;
-        head++;
-        X[head] = x;
-        Y[head] = y;
-        showFruit();
-        score++;
-        showScore();
-        ateOnPrevious++;
-    }
 }
 
 void adjust(int x, int y) {
     int index = 0;
-    while (index < length -1) {
+    while (index < head) {
         X[index] = X[index+1];
         Y[index] = Y[index+1];
         index++;
@@ -124,25 +124,25 @@ int decide(char keyPress) {
                 direction = 'u';
                 return 1;
             }
-            break;
+        break;
         case 80:    // key down
             if (direction != 'u'){
                 direction = 'd';
                 return 1;
             }
-            break;
+        break;
         case 77:    // key right
             if (direction != 'l'){
                 direction = 'r';
                 return 1;
             }
-            break;
+        break;
         case 75:    // key left
             if (direction != 'r'){
                 direction = 'l';
                 return 1;
             }
-            break;
+        break;
         case 27:
         case 'q':
             terminate();
@@ -150,8 +150,7 @@ int decide(char keyPress) {
     return 0;
 }
 
-int init() {
-    length = 1;
+void init() {
     head = 0;
     direction='x';
     fruitX = 0;
@@ -164,9 +163,9 @@ int init() {
 
 void showFruit() {
     generate:
-    fruitX = (rand() % (WIDTH -2)) + X_OFFSET+1;
-    fruitY = (rand() % (HEIGHT -2)) + Y_OFFSET+1;
-    for (int i = 0; i < length -1; i++)
+    fruitX = (rand() % (WIDTH - 2)) + X_OFFSET + 1;
+    fruitY = (rand() % (HEIGHT - 2)) + Y_OFFSET + 1;
+    for (int i = 0; i < head; i++)
         if (X[i] == fruitX && Y[i] == fruitY)
             goto generate;
 
@@ -187,7 +186,6 @@ void gameOver() {
     printf("Game over!");
     gotoxy(60,14);
     printf("Again? (y)");
-
     if (getch() == 'y')
         main();
 
