@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <time.h>
 #include <conio.h>
+#include <wchar.h>
 
 const int WIDTH = 40;
 const int HEIGHT = WIDTH / 2;
@@ -23,7 +24,7 @@ void init();
 void showFruit();
 void showScore();
 void createWalls();
-void hidecursor();
+void toggleCursor();
 void gotoxy(int x, int y);
 void changeColor(int color);
 void moveonestep();
@@ -35,18 +36,22 @@ void delay(int millis);
 
 int head,fruitX,fruitY,score;
 char direction;
-int X[800];
-int Y[800];
+
+struct point {
+    int x;
+    int y;
+};
+
+struct point snake[800];
 
 int main(){
-
     init();
-    hidecursor();
+    toggleCursor(FALSE);
     system("cls");
     createWalls();
     showFruit();
     showScore();
-    gotoxy(X[0],Y[0]);
+    gotoxy(snake[0].x,snake[0].y);
 
     for (;;){
         if(_kbhit() && decide(_getch()) == 0)
@@ -59,13 +64,13 @@ void move(int x,int y){
     check(x,y);
     if (x == fruitX && y == fruitY){
         head++;
-        X[head] = x;
-        Y[head] = y;
-        score++;
+        snake[head] = (struct point){x,y};
+        ++score;
+        Beep(500,10);
         showScore();
         showFruit();
     } else {
-        gotoxy(X[TAIL],Y[TAIL]);
+        gotoxy(snake[TAIL].x,snake[TAIL].y);
         changeColor(10);
         printf(" ");
         adjust(x,y);
@@ -80,38 +85,34 @@ void check(int x, int y) {
     if (x == WIDTH + X_OFFSET-1 || x < X_OFFSET+1 || y ==HEIGHT+Y_OFFSET-1 || y < Y_OFFSET+1)
         gameOver();
 
-    for (int i = 0; i < head; i++)
-        if (X[i] == x && Y[i] == y)
+    for (int i = 0; i < head; ++i)
+        if (snake[i].x == x && snake[i].y == y)
             gameOver();
 }
 
 void adjust(int x, int y) {
     int index = 0;
-    while (index < head) {
-        X[index] = X[index+1];
-        Y[index] = Y[index+1];
-        index++;
-    }
-    X[head] = x;
-    Y[head] = y;
+    while (index < head)
+        snake[index++] = snake[index];
+    snake[head] = (struct point) {x,y};
 }
 
 void moveonestep() {
     int delayMillis = DELAY;
     switch(direction){
         case 'u':
-            move(X[head],Y[head]-1);
+            move(snake[head].x,snake[head].y - 1);
             delayMillis += DELAY_INCREMENT;
         break;
         case 'd':
-            move(X[head],Y[head]+1);
+            move(snake[head].x,snake[head].y + 1);
             delayMillis += DELAY_INCREMENT;
         break;
         case 'l':
-            move(X[head]-1,Y[head]);
+            move(snake[head].x - 1,snake[head].y);
         break;
         case 'r':
-            move(X[head]+1, Y[head]);
+            move(snake[head].x + 1, snake[head].y);
         break;
     }
     delay(delayMillis);
@@ -152,12 +153,11 @@ int decide(char keyPress) {
 
 void init() {
     head = 0;
-    direction='x';
+    direction = 'x';
     fruitX = 0;
     fruitY = 0;
     score = 0;
-    X[0]= WIDTH /2 + X_OFFSET;
-    Y[0]= HEIGHT /2 + Y_OFFSET;
+    snake[0] = (struct point) {WIDTH / 2 + X_OFFSET,HEIGHT / 2 + Y_OFFSET};
     srand(time(NULL));
 }
 
@@ -165,8 +165,8 @@ void showFruit() {
     generate:
     fruitX = (rand() % (WIDTH - 2)) + X_OFFSET + 1;
     fruitY = (rand() % (HEIGHT - 2)) + Y_OFFSET + 1;
-    for (int i = 0; i < head; i++)
-        if (X[i] == fruitX && Y[i] == fruitY)
+    for (int i = 0; i < head; ++i)
+        if (snake[i].x == fruitX && snake[i].y == fruitY)
             goto generate;
 
     gotoxy(fruitX,fruitY);
@@ -184,23 +184,25 @@ void gameOver() {
     gotoxy(60,12);
     changeColor(STD_COLOR);
     printf("Game over!");
+    Beep(400,200);
+    Beep(200,500);
     gotoxy(60,14);
-    printf("Again? (y)");
+    printf("Again? (y/n)");
     if (getch() == 'y')
         main();
-
     terminate();
 }
 
 void terminate() {
     changeColor(STD_COLOR);
     system("cls");
+    toggleCursor(TRUE);
     exit(0);
 }
 
 void createWalls() {
-    for (int i = Y_OFFSET; i < HEIGHT+Y_OFFSET; i++) {
-        for (int j = X_OFFSET; j < WIDTH + X_OFFSET; j++ ){
+    for (int i = Y_OFFSET; i < HEIGHT+Y_OFFSET; ++i) {
+        for (int j = X_OFFSET; j < WIDTH + X_OFFSET; ++j ){
             if (i == Y_OFFSET || i == HEIGHT+Y_OFFSET - 1 || j == X_OFFSET || j == WIDTH+X_OFFSET -1) {
                 gotoxy(j,i);
                 changeColor(WALL_COLOR);
@@ -215,11 +217,11 @@ void delay(int millis){
     while (clock() < start_time + millis);
 }
 
-void hidecursor(){
+void toggleCursor(BOOL b) {
     HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_CURSOR_INFO info;
-    info.dwSize = 100;
-    info.bVisible = FALSE;
+    info.dwSize = 1;
+    info.bVisible = b;
     SetConsoleCursorInfo(consoleHandle, &info);
 }
 
@@ -234,5 +236,7 @@ void changeColor(int color){
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hConsole, color);
 }
+
+
 
 
