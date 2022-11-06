@@ -5,6 +5,8 @@
 #include <conio.h>
 #include <wchar.h>
 
+#define MAX_LENGTH 800
+
 const int WIDTH = 40;
 const int HEIGHT = WIDTH / 2;
 const char SNAKE_CHAR = '#';
@@ -17,7 +19,7 @@ const int X_OFFSET = 4;
 const int Y_OFFSET = 2;
 const int DELAY = 100;
 const int DELAY_INCREMENT = DELAY / 2;
-const int TAIL = 0;
+
 
 int decide(char a);
 void init();
@@ -34,7 +36,7 @@ void terminate();
 void adjust(int x, int y);
 void delay(int millis);
 
-int head,fruitX,fruitY,score;
+int head,fruitX,fruitY,score,tail;
 char direction;
 
 struct point {
@@ -42,7 +44,7 @@ struct point {
     int y;
 };
 
-struct point snake[800];
+struct point snake[MAX_LENGTH];
 
 int main(){
     init();
@@ -63,17 +65,19 @@ int main(){
 void move(int x,int y){
     check(x,y);
     if (x == fruitX && y == fruitY){
-        head++;
+        head = (head + 1) % MAX_LENGTH;
         snake[head] = (struct point){x,y};
         ++score;
         Beep(500,10);
         showScore();
         showFruit();
     } else {
-        gotoxy(snake[TAIL].x,snake[TAIL].y);
+        gotoxy(snake[tail].x,snake[tail].y);
         changeColor(10);
         printf(" ");
-        adjust(x,y);
+        head = (head + 1) % MAX_LENGTH;
+        tail = (tail + 1) % MAX_LENGTH;
+        snake[head] = (struct point){x,y};
     }
 
     gotoxy(x,y);
@@ -85,16 +89,9 @@ void check(int x, int y) {
     if (x == WIDTH + X_OFFSET-1 || x < X_OFFSET+1 || y ==HEIGHT+Y_OFFSET-1 || y < Y_OFFSET+1)
         gameOver();
 
-    for (int i = 0; i < head; ++i)
-        if (snake[i].x == x && snake[i].y == y)
+    for (int i = 0; i < score + 1; ++i)
+        if (snake[(tail + i) % MAX_LENGTH].x == x && snake[(tail + i) % MAX_LENGTH].y == y)
             gameOver();
-}
-
-void adjust(int x, int y) {
-    int index = 0;
-    while (index < head)
-        snake[index++] = snake[index];
-    snake[head] = (struct point) {x,y};
 }
 
 void moveonestep() {
@@ -144,6 +141,9 @@ int decide(char keyPress) {
                 return 1;
             }
         break;
+        case 'p':
+            _getch();
+        break;
         case 27:
         case 'q':
             terminate();
@@ -153,6 +153,7 @@ int decide(char keyPress) {
 
 void init() {
     head = 0;
+    tail = 0;
     direction = 'x';
     fruitX = 0;
     fruitY = 0;
@@ -162,12 +163,17 @@ void init() {
 }
 
 void showFruit() {
-    generate:
+    int boolean;
+    do {
     fruitX = (rand() % (WIDTH - 2)) + X_OFFSET + 1;
     fruitY = (rand() % (HEIGHT - 2)) + Y_OFFSET + 1;
-    for (int i = 0; i < head; ++i)
-        if (snake[i].x == fruitX && snake[i].y == fruitY)
-            goto generate;
+    boolean = 1;
+    for (int i = 0; i < score + 1; ++i)
+        if (snake[(tail + i) % MAX_LENGTH].x == fruitX && snake[tail + i % MAX_LENGTH].y == fruitY){
+            boolean = 0;
+            break;
+        }
+   } while(boolean == 0);
 
     gotoxy(fruitX,fruitY);
     changeColor(FRUIT_COLOR);
@@ -188,9 +194,13 @@ void gameOver() {
     Beep(200,500);
     gotoxy(60,14);
     printf("Again? (y/n)");
-    if (getch() == 'y')
-        main();
-    terminate();
+    while (!_kbhit()) {
+        char input = getch();
+        if (input == 'y')
+            main();
+        if (input == 'n')
+            terminate();
+    }
 }
 
 void terminate() {
